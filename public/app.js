@@ -1,15 +1,23 @@
 /** @type {HTMLButtonElement} */
-const button = document.querySelector("#connect");
+const connectButton = document.querySelector("#connect");
+const startButton = document.querySelector("#start");
+const stopButton = document.querySelector("#stop");
 
-button.addEventListener("click", async () => {
+/** @type {BluetoothRemoteGATTCharacteristic} */
+let characteristic;
+
+connectButton.addEventListener("click", async () => {
   // Request HC-05 Bluetooth device
   const device = await navigator.bluetooth.requestDevice({
     acceptAllDevices: true,
   });
   console.log("Bluetooth device selected:", device.name);
   // Connect to the device
-  const server = await device.gatt.connect();
-  console.log("Connected to Bluetooth device GATT server");
+  const server = await device.gatt.connect().catch(reason => {
+    console.error("Failed to connect", reason);
+  });
+  if (server) console.log("Connected to Bluetooth device GATT server");
+  else return;
   // Access services and characteristics
   // For example:
   const service = await server.getPrimaryService(
@@ -18,13 +26,14 @@ button.addEventListener("click", async () => {
   console.log("Got service:", service.uuid);
   // Access characteristics and interact with the device
   // For example:
-  const characteristic = await service.getCharacteristic(
+  characteristic = await service.getCharacteristic(
     "0000ffe1-0000-1000-8000-00805f9b34fb",
   ); // Characteristic UUID of HC-05
   console.log("Got characteristic:", characteristic.uuid);
-  // Now you can send data to the HC-05 module
-  // For example:
-  const data = new Uint8Array([1, 2, 3]); // Example data to send
+});
+
+/** @param {Uint8Array} data */
+function sendData(data) {
   characteristic
     .writeValue(data)
     .then(() => {
@@ -33,4 +42,4 @@ button.addEventListener("click", async () => {
     .catch((error) => {
       console.error("Error:", error);
     });
-});
+}
